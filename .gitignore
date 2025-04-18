@@ -1,0 +1,8 @@
+# .gitignore
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+static/*.jpg  # Ignore uploaded images (keep folder)
+.cache/       # Hugging Face cache
+*.pt          # PyTorch temporary files
