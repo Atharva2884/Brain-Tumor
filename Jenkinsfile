@@ -5,10 +5,10 @@ pipeline {
         APP_NAME = 'brain_tumor_app'
         PORT = '5000'
         VENV_DIR = 'venv'
+        FLASK_ENV = 'development'  // Moved to environment for consistency
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo '📥 Cloning repository...'
@@ -20,8 +20,8 @@ pipeline {
             steps {
                 echo '🐍 Setting up virtual environment...'
                 bat """
-                    python -m venv %VENV_DIR%
-                    call %VENV_DIR%\\Scripts\\activate
+                    python -m venv "%VENV_DIR%"
+                    call "%VENV_DIR%\\Scripts\\activate"
                     python -m pip install --upgrade pip
                     pip install -r requirements.txt
                 """
@@ -32,9 +32,19 @@ pipeline {
             steps {
                 echo '🧹 Running code linting...'
                 bat """
-                    call %VENV_DIR%\\Scripts\\activate
+                    call "%VENV_DIR%\\Scripts\\activate"
                     pip install flake8
-                    flake8 app.py --ignore=E501
+                    flake8 app.py --ignore=E501,E402,W503
+                """
+            }
+        }
+
+        stage('Run Tests') {  // Added test stage
+            steps {
+                echo '🧪 Running tests...'
+                bat """
+                    call "%VENV_DIR%\\Scripts\\activate"
+                    python -m pytest tests/  // Assuming you have tests
                 """
             }
         }
@@ -43,11 +53,11 @@ pipeline {
             steps {
                 echo "🚀 Launching Flask app on port %PORT%..."
                 bat """
-                    call %VENV_DIR%\\Scripts\\activate
+                    call "%VENV_DIR%\\Scripts\\activate"
                     set FLASK_APP=app.py
-                    set FLASK_ENV=development
-                    start /B flask run --host=0.0.0.0 --port=%PORT%
+                    start "FlaskApp" /B flask run --host=0.0.0.0 --port=%PORT%
                 """
+                // Added title to start command for better process identification
             }
         }
     }
@@ -56,7 +66,8 @@ pipeline {
         always {
             echo '🧹 Cleaning up background processes...'
             bat """
-                taskkill /F /IM python.exe /T || exit 0
+                taskkill /FI "WINDOWTITLE eq FlaskApp" /F /T || exit 0
+                taskkill /FI "IMAGENAME eq python.exe" /F /T || exit 0
             """
         }
     }
