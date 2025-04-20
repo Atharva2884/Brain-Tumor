@@ -1,56 +1,44 @@
 pipeline {
     agent any
-    environment {
-        GIT_REPO = 'https://github.com/Atharva2884/Brain-Tumor.git'
-        BRANCH = 'main'
-        VENV_DIR = 'venv'
-    }
+    
     stages {
-        stage('Checkout SCM') {
+        stage('Clone Repository') {
             steps {
                 script {
-                    checkout scm
+                    // Clone your repository
+                    git 'https://github.com/Atharva2884/Brain-Tumor.git'
                 }
             }
         }
-        stage('Set up Virtual Environment') {
+        
+        stage('Build') {
             steps {
                 script {
-                    // Assuming you're using Python and venv
-                    bat 'python -m venv venv'
-                    bat 'venv\\Scripts\\activate'
-                    bat 'pip install -r requirements.txt'
+                    // Example build step
+                    echo 'Building the project'
+                    // Add your build commands here
                 }
             }
         }
-        stage('Train Model') {
+        
+        stage('Test') {
             steps {
                 script {
-                    // Add your training command here
-                    bat 'python train_model.py'
+                    // Example test step
+                    echo 'Running tests'
+                    // Add your test commands here
                 }
             }
         }
-        stage('Run Flask App') {
+        
+        stage('Deploy') {
             steps {
                 script {
-                    // Run the Flask application
-                    bat 'flask run'
+                    // Example deployment step
+                    echo 'Deploying the project'
+                    // Add your deployment commands here
                 }
             }
-        }
-        stage('Deploy to Server') {
-            steps {
-                script {
-                    // Add deployment steps
-                }
-            }
-        }
-    }
-    post {
-        always {
-            echo 'Cleaning up...'
-            // Perform cleanup actions
         }
     }
 }
