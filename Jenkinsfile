@@ -2,54 +2,62 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = 'brain-tumor-predictor'
+        APP_NAME = 'brain_tumor_app'
+        PORT = '5000'
         VENV_DIR = 'venv'
     }
 
     stages {
-        stage('Clone Repo') {
+
+        stage('Checkout') {
             steps {
-                echo 'Cloning repository...'
+                echo '📥 Cloning repository...'
                 checkout scm
             }
         }
 
-        stage('Setup Python Virtual Environment') {
+        stage('Set up Python & Virtual Environment') {
             steps {
-                echo 'Creating virtual environment and installing dependencies...'
-                bat '''
+                echo '🐍 Setting up virtual environment...'
+                bat """
                     python -m venv %VENV_DIR%
                     call %VENV_DIR%\\Scripts\\activate
-                    pip install --upgrade pip
+                    python -m pip install --upgrade pip
                     pip install -r requirements.txt
-                '''
+                """
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Code Linting') {
             steps {
-                echo 'Building Docker image...'
-                bat '''
-                    docker build -t %APP_NAME%:latest .
-                '''
+                echo '🧹 Running code linting...'
+                bat """
+                    call %VENV_DIR%\\Scripts\\activate
+                    pip install flake8
+                    flake8 app.py --ignore=E501
+                """
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Run Flask App') {
             steps {
-                echo 'Running the Flask app in a Docker container...'
-                bat '''
-                    docker run -d -p 5000:5000 --name %APP_NAME%_container %APP_NAME%:latest
-                '''
+                echo "🚀 Launching Flask app on port %PORT%..."
+                bat """
+                    call %VENV_DIR%\\Scripts\\activate
+                    set FLASK_APP=app.py
+                    set FLASK_ENV=development
+                    start /B flask run --host=0.0.0.0 --port=%PORT%
+                """
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline finished.'
-            // Clean workspace to avoid issues in future builds
-            cleanWs()
+            echo '🧹 Cleaning up background processes...'
+            bat """
+                taskkill /F /IM python.exe /T || exit 0
+            """
         }
     }
 }
