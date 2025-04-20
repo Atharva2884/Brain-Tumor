@@ -1,13 +1,9 @@
-torch==2.6.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.0.1+cpu
 transformers==4.30.2
 pillow==9.5.0
 flask==2.3.2
 gunicorn==20.1.0
 numpy==1.24.3
-torch==2.0.1 --find-links https://download.pytorch.org/whl/torch_stable.html
-transformers==4.30.2
-pillow==9.5.0
-flask==2.3.2
-gunicorn==20.1.0
-numpy==1.24.3; python_version < '3.12'  # Python 3.12+ needs newer numpy
-setuptools==68.0.0  # Explicitly add setuptools
+setuptools==68.0.0
+flake8==6.1.0
