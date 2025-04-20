@@ -2,88 +2,92 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = 'brain_tumor_app'
-        PORT = '5000'
-        VENV_DIR = 'venv'
-        FLASK_ENV = 'development'
-        // For Windows paths
-        PYTHON = "${env.WORKSPACE}\\${VENV_DIR}\\Scripts\\python.exe"
-        PIP = "${env.WORKSPACE}\\${VENV_DIR}\\Scripts\\pip.exe"
+        VIRTUAL_ENV = 'venv'  // Specify your virtual environment folder name
+        PYTHON = 'python'  // You may use 'python3' if needed
+        GIT_REPO_URL = 'https://github.com/yourusername/Brain-Tumor.git'  // Replace with your GitHub repo
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                echo '📥 Cloning repository...'
-                checkout scm
+                echo "Cloning the GitHub repository..."
+                git url: "${GIT_REPO_URL}", branch: 'main'  // Clone your repository, adjust branch if necessary
             }
         }
 
-        stage('Set up Python Environment') {
+        stage('Set up Virtual Environment') {
             steps {
-                echo '🐍 Setting up virtual environment...'
-                bat """
-                    python -m venv "%VENV_DIR%"
-                    call "%VENV_DIR%\\Scripts\\activate"
-                    python -m pip install --upgrade pip setuptools wheel
-                    "%PIP%" install -r requirements.txt
-                """
+                echo "Setting up Python virtual environment..."
+                script {
+                    // Check if the virtual environment exists, if not, create one
+                    if (!fileExists("${VIRTUAL_ENV}")) {
+                        sh "${PYTHON} -m venv ${VIRTUAL_ENV}"
+                    }
+                    // Activate the virtual environment and install dependencies
+                    sh """
+                        source ${VIRTUAL_ENV}/bin/activate  # For Linux/macOS
+                        # On Windows, use: .\\${VIRTUAL_ENV}\\Scripts\\activate
+                        pip install -r requirements.txt
+                    """
+                }
             }
         }
 
-        stage('Verify Installation') {
+        stage('Train Model') {
             steps {
-                echo '🔍 Verifying package installation...'
-                bat """
-                    call "%VENV_DIR%\\Scripts\\activate"
-                    python -c "import torch; print(f'Torch version: {torch.__version__}')"
-                    python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
-                """
-            }
-        }
-
-        stage('Code Linting') {
-            steps {
-                echo '🧹 Running code linting...'
-                bat """
-                    call "%VENV_DIR%\\Scripts\\activate"
-                    flake8 app.py --ignore=E501,E402,W503 --max-line-length=120
-                """
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                echo '🧪 Running tests...'
-                bat """
-                    call "%VENV_DIR%\\Scripts\\activate"
-                    python -m pytest tests/ || echo "Tests failed but continuing pipeline"
-                """
+                echo "Training the model..."
+                script {
+                    // Activate the environment and train your model
+                    sh """
+                        source ${VIRTUAL_ENV}/bin/activate
+                        # Train your model (ensure your train.py script is present in the repo)
+                        python train.py
+                    """
+                }
             }
         }
 
         stage('Run Flask App') {
             steps {
-                echo "🚀 Launching Flask app on port %PORT%..."
-                bat """
-                    call "%VENV_DIR%\\Scripts\\activate"
-                    set FLASK_APP=app.py
-                    start "FlaskApp" /B python -m flask run --host=0.0.0.0 --port=%PORT%
-                """
-                // Wait for server to start
-                bat 'timeout /t 10 /nobreak'
+                echo "Starting the Flask app..."
+                script {
+                    // Start the Flask app or a Gunicorn server (modify for local or deployment purposes)
+                    sh """
+                        source ${VIRTUAL_ENV}/bin/activate
+                        # Run Flask app directly or use Gunicorn on Unix systems
+                        # On Windows, use python app.py instead of gunicorn
+                        gunicorn app:app --bind 0.0.0.0:5000  # For Linux/macOS (replace with python app.py for Windows)
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Server') {
+            steps {
+                echo "Deploying the application to the server..."
+                script {
+                    // You can set up deployment steps here using SSH, Docker, or Kubernetes
+                    // Example for Docker deployment:
+                    sh """
+                        docker build -t brain-tumor-app .
+                        docker run -d -p 5000:5000 brain-tumor-app
+                    """
+                }
             }
         }
     }
 
     post {
         always {
-            echo '🧹 Cleaning up resources...'
-            bat """
-                taskkill /FI "WINDOWTITLE eq FlaskApp" /F /T || echo "No Flask process found"
-                taskkill /FI "IMAGENAME eq python.exe" /F /T || echo "No Python processes found"
-                rmdir /s /q "%VENV_DIR%" || echo "Could not remove virtual environment"
-            """
+            echo "Cleaning up..."
+            // Clean up virtual environment or any temp files if necessary
+            sh "rm -rf ${VIRTUAL_ENV}"
+        }
+        success {
+            echo "Pipeline executed successfully!"
+        }
+        failure {
+            echo "Pipeline failed. Please check the logs."
         }
     }
 }
