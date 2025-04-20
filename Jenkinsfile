@@ -2,44 +2,52 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "brain-tumor-app"
-        CONTAINER_NAME = "brain-tumor-container"
+        APP_NAME = 'brain-tumor-predictor'
+        VENV_DIR = 'venv'
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Clone Repo') {
             steps {
-                git 'https://github.com/your-username/your-brain-tumor-project.git'
+                echo 'Cloning repository...'
+                checkout scm
+            }
+        }
+
+        stage('Setup Python Virtual Environment') {
+            steps {
+                echo 'Creating virtual environment and installing dependencies...'
+                sh '''
+                    python3 -m venv $VENV_DIR
+                    . $VENV_DIR/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME} ."
+                echo 'Building Docker image...'
+                sh '''
+                    docker build -t ${APP_NAME}:latest .
+                '''
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Run Docker Container') {
             steps {
-                sh """
-                docker rm -f ${CONTAINER_NAME} || true
-                """
-            }
-        }
-
-        stage('Run New Container') {
-            steps {
-                sh "docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${IMAGE_NAME}"
+                echo 'Running the Flask app in a Docker container...'
+                sh '''
+                    docker run -d -p 5000:5000 --name ${APP_NAME}_container ${APP_NAME}:latest
+                '''
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Deployment successful!'
-        }
-        failure {
-            echo '❌ Deployment failed.'
+        always {
+            echo 'Pipeline finished.'
         }
     }
 }
