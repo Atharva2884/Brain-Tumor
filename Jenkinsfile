@@ -48,6 +48,8 @@ pipeline {
     post {
         always {
             echo 'Pipeline finished.'
+            // Clean workspace to avoid issues in future builds
+            cleanWs()
         }
     }
 }
