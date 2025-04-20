@@ -17,9 +17,9 @@ pipeline {
         stage('Setup Python Virtual Environment') {
             steps {
                 echo 'Creating virtual environment and installing dependencies...'
-                sh '''
-                    python3 -m venv $VENV_DIR
-                    . $VENV_DIR/bin/activate
+                bat '''
+                    python -m venv %VENV_DIR%
+                    call %VENV_DIR%\\Scripts\\activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
@@ -29,8 +29,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                sh '''
-                    docker build -t ${APP_NAME}:latest .
+                bat '''
+                    docker build -t %APP_NAME%:latest .
                 '''
             }
         }
@@ -38,8 +38,8 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 echo 'Running the Flask app in a Docker container...'
-                sh '''
-                    docker run -d -p 5000:5000 --name ${APP_NAME}_container ${APP_NAME}:latest
+                bat '''
+                    docker run -d -p 5000:5000 --name %APP_NAME%_container %APP_NAME%:latest
                 '''
             }
         }
