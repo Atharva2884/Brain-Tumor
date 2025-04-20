@@ -17,16 +17,16 @@ pipeline {
         }
 
         stage('Set up Python & Virtual Environment') {
-            steps {
-                echo '🐍 Setting up virtual environment...'
-                bat """
-                    python -m venv "%VENV_DIR%"
-                    call "%VENV_DIR%\\Scripts\\activate"
-                    python -m pip install --upgrade pip
-                    pip install -r requirements.txt
-                """
-            }
-        }
+    steps {
+        echo '🐍 Setting up virtual environment...'
+        bat """
+            python -m venv "%VENV_DIR%"
+            call "%VENV_DIR%\\Scripts\\activate"
+            python -m pip install --upgrade pip setuptools wheel
+            pip install -r requirements.txt
+        """
+    }
+}
 
         stage('Code Linting') {
             steps {
